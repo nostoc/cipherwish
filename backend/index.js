@@ -13,19 +13,10 @@ app.use(express.json()); // Allows the server to accept JSON payloads
 // --- Database Schema ---
 // Notice: There is NO password or key stored here. Just the Initialization Vector (IV) and Ciphertext.
 const wishlistSchema = new mongoose.Schema({
-    iv: {
-        type: String,
-        required: true
-    },
-    ciphertext: {
-        type: String,
-        required: true
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-        expires: '30d' // Security Feature: Auto-delete lists after 30 days to limit data exposure
-    }
+    iv: { type: String, required: true },
+    ciphertext: { type: String, required: true },
+    isEphemeral: { type: Boolean, default: false }, // NEW FLAG
+    createdAt: { type: Date, default: Date.now, expires: '30d' }
 });
 
 const Wishlist = mongoose.model('Wishlist', wishlistSchema);
@@ -35,19 +26,17 @@ const Wishlist = mongoose.model('Wishlist', wishlistSchema);
 // 1. POST: Save an encrypted wishlist
 app.post('/api/wishlists', async (req, res) => {
     try {
-        const { iv, ciphertext } = req.body;
+        const { iv, ciphertext, isEphemeral } = req.body; // Accept the new flag
 
         if (!iv || !ciphertext) {
             return res.status(400).json({ error: 'Missing encryption parameters' });
         }
 
-        const newList = new Wishlist({ iv, ciphertext });
+        const newList = new Wishlist({ iv, ciphertext, isEphemeral });
         const savedList = await newList.save();
 
-        // Return the auto-generated MongoDB ID to the frontend so it can build the shareable link
         res.status(201).json({ id: savedList._id });
     } catch (error) {
-        console.error('Error saving wishlist:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -58,18 +47,23 @@ app.get('/api/wishlists/:id', async (req, res) => {
         const list = await Wishlist.findById(req.params.id);
 
         if (!list) {
-            return res.status(404).json({ error: 'Wishlist not found or has expired' });
+            return res.status(404).json({ error: 'Wishlist not found, or it was already viewed and destroyed.' });
         }
 
-        // Serve the scrambled data to whoever asks for it. 
-        // The frontend will handle the decryption using the URL fragment key.
-        res.status(200).json({ iv: list.iv, ciphertext: list.ciphertext });
+        // Capture the data we need to send
+        const responseData = { iv: list.iv, ciphertext: list.ciphertext };
+
+        // Self-Destruct Sequence
+        if (list.isEphemeral) {
+            await Wishlist.findByIdAndDelete(req.params.id);
+            console.log(`💥 Ephemeral list ${req.params.id} has been destroyed.`);
+        }
+
+        res.status(200).json(responseData);
     } catch (error) {
-        console.error('Error fetching wishlist:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-
 // --- Start the Server ---
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => {

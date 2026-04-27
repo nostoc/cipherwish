@@ -4,10 +4,11 @@ import { useState } from "react";
 import { generateKeyString, encryptData } from "../utils/crypto";
 
 export default function Home() {
-  // Explicitly state these hooks hold strings and booleans
   const [wishlist, setWishlist] = useState<string>("");
   const [shareLink, setShareLink] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  // NEW: State for the Burn After Reading toggle
+  const [isEphemeral, setIsEphemeral] = useState<boolean>(false);
 
   const handleCreateLink = async () => {
     if (!wishlist.trim()) return alert("Please enter some items first!");
@@ -20,7 +21,8 @@ export default function Home() {
       const response = await fetch("http://localhost:5000/api/wishlists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ iv, ciphertext }),
+        // NEW: Send the isEphemeral flag to the backend
+        body: JSON.stringify({ iv, ciphertext, isEphemeral }),
       });
 
       if (!response.ok) throw new Error("Server rejected the request");
@@ -47,10 +49,24 @@ export default function Home() {
 
         <textarea
           className="w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-          placeholder="Enter your wishlist items here (e.g., Mechanical Keyboard, Coffee Beans...)"
+          placeholder="Enter your wishlist items here..."
           value={wishlist}
           onChange={(e) => setWishlist(e.target.value)}
         />
+
+        {/* NEW: The Burn After Reading Toggle UI */}
+        <label className="flex items-center space-x-3 mb-6 cursor-pointer bg-red-50 p-3 rounded border border-red-100 hover:bg-red-100 transition">
+          <input
+            type="checkbox"
+            checked={isEphemeral}
+            onChange={(e) => setIsEphemeral(e.target.checked)}
+            className="w-5 h-5 text-red-600 rounded border-red-300 focus:ring-red-500 cursor-pointer"
+          />
+          <div>
+            <p className="text-sm font-semibold text-red-800">Burn After Reading 🧨</p>
+            <p className="text-xs text-red-600">The list will self-destruct after being viewed once.</p>
+          </div>
+        </label>
 
         <button
           onClick={handleCreateLink}
@@ -69,9 +85,6 @@ export default function Home() {
               className="w-full p-2 text-sm bg-white border border-green-300 rounded mb-2 outline-none"
               onClick={(e) => e.currentTarget.select()}
             />
-            <p className="text-xs text-gray-500">
-              Notice the <strong>#</strong> at the end? That is your decryption key. It will not be sent to our server when your friend clicks the link.
-            </p>
           </div>
         )}
       </div>
