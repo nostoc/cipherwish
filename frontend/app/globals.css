@@ -1,26 +1,118 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f1f5fa;
+  --foreground: #122033;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-strong: #ffffff;
+  --border: rgba(113, 137, 170, 0.24);
+  --primary: #1f4fd1;
+  --primary-strong: #163a9a;
+  --secondary: #0f9b8e;
+  --success: #15803d;
+  --muted: #5d6b82;
+  --shadow-soft: 0 18px 50px rgba(16, 40, 84, 0.12);
+  --shadow-card: 0 24px 70px rgba(15, 33, 63, 0.14);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Aptos", "Segoe UI", "Trebuchet MS", sans-serif;
+  --font-mono: "Consolas", "SFMono-Regular", "Liberation Mono", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Aptos", "Segoe UI", "Trebuchet MS", sans-serif;
+  background-image:
+    radial-gradient(circle at top left, rgba(31, 79, 209, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(15, 155, 142, 0.12), transparent 24%),
+    linear-gradient(180deg, #fbfdff 0%, #f1f5fa 42%, #edf2f7 100%);
+}
+
+::selection {
+  background: rgba(31, 79, 209, 0.18);
+  color: var(--foreground);
+}
+
+a,
+button,
+input,
+textarea {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.app-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.38)),
+    linear-gradient(180deg, rgba(31, 79, 209, 0.04), transparent 34%);
+  z-index: -1;
+}
+
+.glass-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.surface-panel {
+  background: var(--surface-strong);
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  box-shadow: var(--shadow-card);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(31, 79, 209, 0.12);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.45rem 0.8rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary-strong);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(140, 157, 181, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 157, 181, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.section-rule {
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  padding-top: 1.5rem;
 }

@@ -12,6 +12,10 @@ const hex2buf = (hexString: string): Uint8Array => {
     return new Uint8Array(match.map(byte => parseInt(byte, 16)));
 };
 
+const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
+    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+};
+
 // 1. Generate a Key and Export it as a Hex string for the URL
 export async function generateKeyString(): Promise<string> {
     const key = await window.crypto.subtle.generateKey(
@@ -26,7 +30,7 @@ export async function generateKeyString(): Promise<string> {
 
 // 2. Encrypt the Wishlist Data
 export async function encryptData(text: string, keyString: string): Promise<{ iv: string, ciphertext: string }> {
-    const keyBuffer = hex2buf(keyString);
+    const keyBuffer = toArrayBuffer(hex2buf(keyString));
     const key = await window.crypto.subtle.importKey(
         "raw", keyBuffer, "AES-GCM", false, ["encrypt"]
     );
@@ -53,9 +57,9 @@ export async function decryptData(
 ): Promise<string> {
     try {
         // Convert the Hex strings back to raw bytes
-        const keyBuffer = hex2buf(keyString);
-        const ivBuffer = hex2buf(encryptedObj.iv);
-        const ciphertextBuffer = hex2buf(encryptedObj.ciphertext);
+        const keyBuffer = toArrayBuffer(hex2buf(keyString));
+        const ivBuffer = toArrayBuffer(hex2buf(encryptedObj.iv));
+        const ciphertextBuffer = toArrayBuffer(hex2buf(encryptedObj.ciphertext));
 
         // Import the key back into the Web Crypto API
         const key = await window.crypto.subtle.importKey(
@@ -111,9 +115,9 @@ export async function verifySignature(
     publicKeyHex: string
 ): Promise<boolean> {
     // Convert the hex strings back to buffers
-    const signatureBuffer = hex2buf(signatureHex);
+    const signatureBuffer = toArrayBuffer(hex2buf(signatureHex));
     const dataBuffer = new TextEncoder().encode(ciphertextHex);
-    const publicKeySPKI = hex2buf(publicKeyHex); // SPKI is the standard format for exporting public keys
+    const publicKeySPKI = toArrayBuffer(hex2buf(publicKeyHex)); // SPKI is the standard format for exporting public keys
 
     // Import the public key back into the Crypto API
     const publicKey = await window.crypto.subtle.importKey(
