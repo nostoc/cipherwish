@@ -76,3 +76,65 @@ export async function decryptData(
         throw new Error("Decryption failed. The link might be invalid or the data was tampered with.");
     }
 }
+
+// --- ASYMMETRIC CRYPTOGRAPHY (RSA Digital Signatures) ---
+
+// 4. Generate an RSA Key Pair for signing
+export async function generateSigningKeyPair() {
+    return await window.crypto.subtle.generateKey(
+        {
+            name: "RSASSA-PKCS1-v1_5",
+            modulusLength: 2048, // Standard secure length
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256",
+        },
+        true, // Extractable
+        ["sign", "verify"]
+    );
+}
+
+// 5. Sign the ciphertext using the Private Key
+export async function signData(ciphertextHex: string, privateKey: CryptoKey): Promise<string> {
+    const dataBuffer = new TextEncoder().encode(ciphertextHex);
+    const signatureBuffer = await window.crypto.subtle.sign(
+        "RSASSA-PKCS1-v1_5",
+        privateKey,
+        dataBuffer
+    );
+    return buf2hex(signatureBuffer); // Export as Hex string
+}
+
+// 6. Verify the signature using the Public Key
+export async function verifySignature(
+    ciphertextHex: string,
+    signatureHex: string,
+    publicKeyHex: string
+): Promise<boolean> {
+    // Convert the hex strings back to buffers
+    const signatureBuffer = hex2buf(signatureHex);
+    const dataBuffer = new TextEncoder().encode(ciphertextHex);
+    const publicKeySPKI = hex2buf(publicKeyHex); // SPKI is the standard format for exporting public keys
+
+    // Import the public key back into the Crypto API
+    const publicKey = await window.crypto.subtle.importKey(
+        "spki",
+        publicKeySPKI,
+        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+        false,
+        ["verify"]
+    );
+
+    // Perform the mathematical verification
+    return await window.crypto.subtle.verify(
+        "RSASSA-PKCS1-v1_5",
+        publicKey,
+        signatureBuffer,
+        dataBuffer
+    );
+}
+
+// Helper: Export the RSA Public Key so the server can store it
+export async function exportPublicKey(publicKey: CryptoKey): Promise<string> {
+    const exported = await window.crypto.subtle.exportKey("spki", publicKey);
+    return buf2hex(exported);
+}

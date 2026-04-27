@@ -1,28 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { generateKeyString, encryptData } from "../utils/crypto";
+import {
+  generateKeyString,
+  encryptData,
+  generateSigningKeyPair,
+  signData,
+  exportPublicKey
+} from "../utils/crypto";
 
 export default function Home() {
   const [wishlist, setWishlist] = useState<string>("");
   const [shareLink, setShareLink] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  // NEW: State for the Burn After Reading toggle
   const [isEphemeral, setIsEphemeral] = useState<boolean>(false);
+  const [pin, setPin] = useState<string>("");
 
   const handleCreateLink = async () => {
     if (!wishlist.trim()) return alert("Please enter some items first!");
     setLoading(true);
 
     try {
+      // 1. Symmetric Encryption (AES)
       const keyString = await generateKeyString();
       const { iv, ciphertext } = await encryptData(wishlist, keyString);
 
+      // 2. Asymmetric Digital Signatures (RSA)
+      const rsaKeyPair = await generateSigningKeyPair();
+      const signature = await signData(ciphertext, rsaKeyPair.privateKey);
+      const publicKey = await exportPublicKey(rsaKeyPair.publicKey);
+
+      // 3. Send to Untrusted Server
       const response = await fetch("http://localhost:5000/api/wishlists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // NEW: Send the isEphemeral flag to the backend
-        body: JSON.stringify({ iv, ciphertext, isEphemeral }),
+        body: JSON.stringify({ iv, ciphertext, isEphemeral, pin, publicKey, signature }),
       });
 
       if (!response.ok) throw new Error("Server rejected the request");
@@ -44,7 +56,7 @@ export default function Home() {
       <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8">
         <h1 className="text-2xl font-bold mb-2 text-center">Create Secure Wishlist</h1>
         <p className="text-sm text-gray-500 mb-6 text-center">
-          Your list is encrypted in the browser. The server never sees your data.
+          Secured with AES-256 and RSA Digital Signatures.
         </p>
 
         <textarea
@@ -54,7 +66,20 @@ export default function Home() {
           onChange={(e) => setWishlist(e.target.value)}
         />
 
-        {/* NEW: The Burn After Reading Toggle UI */}
+        <div className="mb-4">
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Vault PIN (Optional) 🔒
+          </label>
+          <input
+            type="password"
+            maxLength={10}
+            placeholder="e.g., 1234"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
         <label className="flex items-center space-x-3 mb-6 cursor-pointer bg-red-50 p-3 rounded border border-red-100 hover:bg-red-100 transition">
           <input
             type="checkbox"
@@ -73,7 +98,7 @@ export default function Home() {
           disabled={loading}
           className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:bg-blue-300"
         >
-          {loading ? "Encrypting..." : "Encrypt & Generate Link"}
+          {loading ? "Securing & Signing..." : "Encrypt, Sign & Generate Link"}
         </button>
 
         {shareLink && (
