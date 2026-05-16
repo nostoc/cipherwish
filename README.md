@@ -1,72 +1,274 @@
 # CipherWish 🎁🔒
 
-> **An end-to-end encrypted, zero-knowledge wishlist sharing platform.**
+**CipherWish** is an end-to-end encrypted, server-blind wishlist sharing platform developed for the **EC7201 Information Security** continuous project.
 
-CipherWish lets users create and share wishlists without exposing their personal preferences or plans to the server. All encryption happens in the browser, so the backend only stores ciphertext and never sees the plaintext list or decryption key.
+The system demonstrates a secure communication mechanism between two untrusted parties: a wishlist sender and a recipient. The backend is treated as an untrusted storage server. It stores only encrypted data and verification metadata, not plaintext wishlists or decryption keys.
 
-## 🛡️ The Security Model (Zero-Knowledge Architecture)
+---
 
-CipherWish is built on a zero-trust architecture.
-1. **Client-Side Encryption:** When a user creates a wishlist, the browser generates a cryptographically strong 256-bit key using the native Web Crypto API. The wishlist is encrypted locally using **AES-GCM**.
-2. **Untrusted Server:** Only the resulting ciphertext and the Initialization Vector (IV) are sent to the backend. The backend (Node.js/MongoDB) does not hold the encryption key or any user passwords.
-3. **URL-Fragment Key Exchange:** The encryption key is exported as a Hex string and appended to the shareable URL as a fragment (e.g., `https://cipherwish.com/list/123#KEY`). Because browsers **do not** send URL fragments to the server, the server never sees the key. The recipient's browser downloads the ciphertext, grabs the key from the URL, and decrypts the wishlist locally.
+## 1. Security Goal
 
-## 🚀 Tech Stack
+CipherWish allows a user to create a private wishlist and share it through a secure link.
 
-* **Frontend:** Next.js (React), TypeScript, Tailwind CSS
-* **Backend:** Node.js, Express.js
-* **Database:** MongoDB
-* **Cryptography:** Native Web Crypto API (AES-GCM)
+The design aims to provide:
 
-## ✨ Highlights
+| Property | How CipherWish addresses it |
+|---|---|
+| Confidentiality | Wishlist is encrypted in the browser using AES-256-GCM before upload |
+| Integrity | AES-GCM authentication and RSA-PSS signature verification detect tampering |
+| Authentication / key binding | Public-key fingerprint is included in the URL fragment to prevent server-side public-key substitution |
+| Server blindness | Backend stores only ciphertext, IV, public key, fingerprint, and signature |
+| Data minimization | Optional burn-after-reading and 30-day automatic expiry |
+| Availability hardening | API rate limiting, request size limits, validation, and security headers |
+| PIN protection | Optional Vault PIN/passphrase is hashed with bcrypt and checked before ciphertext retrieval |
 
-* Client-side encryption and signature verification.
-* Optional PIN protection for shared wishlists.
-* Burn-after-reading support for one-time access.
-* A clean UI with copy-to-clipboard icon actions and a compact project footer.
+> Important clarification: CipherWish uses "zero-knowledge" in the practical server-blind sense. It does not implement a formal zero-knowledge proof protocol.
 
-## 💻 Local Setup & Installation
+---
 
-**Prerequisites:** Node.js installed and a MongoDB database (local or Atlas).
+## 2. Threat Model
 
-**1. Clone the repository:**
-```bash
-git clone https://github.com/nostoc/cipherwish.git
-cd cipherwish
+### Trusted components
+
+- The user's browser runtime
+- Native Web Crypto API
+- The secure share channel chosen by the user
+
+### Untrusted components
+
+- Backend server
+- Database
+- Network path
+- Unknown users trying to guess PINs or enumerate links
+
+### Considered attacks and mitigations
+
+| Attack | Mitigation |
+|---|---|
+| Database leak | Database contains ciphertext only; no AES key or plaintext |
+| Malicious backend reads data | Backend never receives URL fragment key |
+| Ciphertext tampering | RSA-PSS signature verification and AES-GCM authentication fail |
+| Public-key substitution by server | Public-key fingerprint is included in the URL fragment |
+| PIN brute-force | Rate limiting and bcrypt-hashed PIN/passphrase |
+| ID enumeration | Random 192-bit share IDs instead of MongoDB object IDs |
+| Storage spam / DoS | Request size limit and POST/GET rate limiting |
+| One-time link race | Burn-after-reading uses atomic `findOneAndDelete` on successful access |
+| Overly permissive browser access | CORS restricted to configured frontend origin |
+
+---
+
+## 3. Cryptographic Design
+
+### 3.1 Wishlist encryption
+
+1. Browser generates a fresh 256-bit AES-GCM key.
+2. Browser generates a random 12-byte IV.
+3. Wishlist text is encrypted locally.
+4. Backend receives only:
+   - `iv`
+   - `ciphertext`
+   - `publicKey`
+   - `publicKeyFingerprint`
+   - `signature`
+
+### 3.2 Share link format
+
+```text
+/list/:shareId#AES_KEY.PUBLIC_KEY_FINGERPRINT
 ```
 
-**2. Setup the Backend (Untrusted Server):**
+The fragment after `#` is not sent to the backend by normal HTTP requests. The recipient browser uses it locally.
+
+### 3.3 Signature flow
+
+1. Browser creates an RSA-PSS key pair.
+2. Browser signs a canonical payload:
+
+```json
+{
+  "version": 1,
+  "iv": "...",
+  "ciphertext": "..."
+}
+```
+
+3. Browser stores the public key and signature with the ciphertext.
+4. Recipient browser:
+   - hashes the received public key
+   - compares it with the fingerprint in the URL fragment
+   - verifies the RSA-PSS signature
+   - decrypts only if verification succeeds
+
+This prevents an untrusted server from replacing the ciphertext, public key, and signature together.
+
+---
+
+## 4. Updated Project Structure
+
+```text
+cipherwish/
+├── backend/
+│   ├── .env.example
+│   ├── index.js
+│   └── package.json
+│
+├── frontend/
+│   ├── .env.local.example
+│   ├── app/
+│   │   ├── page.tsx
+│   │   └── list/
+│   │       └── [id]/
+│   │           └── page.tsx
+│   └── utils/
+│       └── crypto.ts
+│
+└── README.md
+```
+
+---
+
+## 5. Local Setup
+
+### 5.1 Backend
+
 ```bash
 cd backend
 npm install
-```
-Create a `.env` file in the `backend` directory and add your MongoDB URI:
-```env
-MONGODB_URI=your_mongodb_connection_string_here
-PORT=5000
-```
-Start the server:
-```bash
+cp .env.example .env
 npm start
 ```
 
-**3. Setup the Frontend (Client):**
-Open a new terminal window:
+Example `.env`:
+
+```env
+MONGODB_URI=mongodb://127.0.0.1:27017/cipherwish
+PORT=5000
+FRONTEND_ORIGIN=http://localhost:3000
+```
+
+### 5.2 Frontend
+
 ```bash
 cd frontend
 npm install
+cp .env.local.example .env.local
 npm run dev
 ```
-Navigate to `http://localhost:3000` to create your first secure wishlist!
 
-## 📁 Project Structure
+Example `.env.local`:
 
-* `frontend/` - Next.js application with the wishlist composer and public share views.
-* `backend/` - Express API that stores encrypted wishlist payloads.
-* `LICENSE` - Apache 2.0 license for the project.
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
+```
 
-## 🎓 Academic Disclaimer
-This project was developed as part of an Information Security module to demonstrate practical implementations of the CIA triad, threat modeling, and modern cryptographic protocols.
+Open:
 
-## ⚖️ License
-Distributed under the Apache 2.0 License. See `LICENSE` for more information.
+```text
+http://localhost:3000
+```
+
+---
+
+## 6. Demonstration Plan
+
+### Demo 1: Normal secure sharing
+
+1. Create wishlist.
+2. Generate secure link.
+3. Open link as recipient.
+4. Show that verification happens before decryption.
+
+### Demo 2: Server cannot read plaintext
+
+1. Inspect MongoDB record.
+2. Show that only ciphertext, IV, signature, and public key are stored.
+3. Confirm no plaintext wishlist or AES key exists in the backend.
+
+### Demo 3: Tamper detection
+
+1. Modify one character of ciphertext in MongoDB.
+2. Open secure link.
+3. Show signature or decryption failure.
+
+### Demo 4: Public-key substitution prevention
+
+1. Explain that if the server replaces public key + signature, basic signature verification alone is not enough.
+2. Show that CipherWish compares the public-key fingerprint in the URL fragment.
+3. Mismatch blocks decryption.
+
+### Demo 5: PIN protection
+
+1. Create a PIN-protected list.
+2. Try wrong PIN.
+3. Show access denied.
+4. Try correct PIN.
+5. Show successful decryption.
+
+### Demo 6: Burn-after-reading
+
+1. Create burn-after-reading wishlist.
+2. Open once successfully.
+3. Open again.
+4. Show that the encrypted record has been consumed.
+
+---
+
+## 7. Known Limitations
+
+- Anyone with the full secure link can decrypt the wishlist.
+- Browser extensions, clipboard managers, screenshots, or unsafe sharing channels can leak the fragment key.
+- This is not a formal zero-knowledge proof system.
+- If the recipient device is compromised, local plaintext can be stolen after decryption.
+- bcrypt is acceptable for the prototype, but Argon2id would be preferred for production password/passphrase hashing.
+- HTTPS is required in production.
+
+---
+
+## 8. Recommended Production Improvements
+
+- Deploy only over HTTPS.
+- Use Argon2id for Vault passphrase hashing.
+- Add persistent per-list lockout after repeated failed PIN attempts.
+- Add a revocation feature for non-ephemeral links.
+- Add user-selected expiry durations.
+- Add automated security tests.
+- Add dependency scanning and SAST in GitHub Actions.
+
+---
+
+## 9. Academic Mapping
+
+This project demonstrates:
+
+- Symmetric-key encryption: AES-GCM
+- Asymmetric cryptography: RSA-PSS signatures
+- Hash functions: SHA-256 public-key fingerprinting
+- Authentication and integrity checking
+- Secure protocol design between untrusted parties
+- CIA triad analysis
+- Threat modeling and mitigation
+- Practical implementation using a high-level language
+
+---
+
+## 10. Important Viva Points
+
+Use these answers during the oral examination:
+
+**Why AES-GCM?**  
+AES-GCM provides authenticated encryption. It protects confidentiality and also detects ciphertext tampering.
+
+**Why URL fragment?**  
+The URL fragment is handled client-side and is not normally sent in HTTP requests to the backend. Therefore, the server does not receive the AES key.
+
+**Why public-key fingerprint in the fragment?**  
+Without it, a malicious server could replace the ciphertext, public key, and signature together. The fingerprint binds the trusted public key to the out-of-band secure link.
+
+**Is this a formal zero-knowledge proof?**  
+No. It is a server-blind zero-knowledge architecture, meaning the server has no knowledge of plaintext or encryption keys.
+
+**What happens if the database is leaked?**  
+The attacker obtains ciphertext and metadata, but not the AES key. Without the full secure link, wishlist contents remain confidential.
+
+**What is the biggest limitation?**  
+The secure link is a bearer secret. Anyone who obtains the complete link can decrypt the wishlist, so the link must be shared through a trusted channel.

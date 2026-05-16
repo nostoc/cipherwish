@@ -1,22 +1,68 @@
-// Helper: Convert raw bytes (ArrayBuffer) to a Hexadecimal string (URL safe)
-const buf2hex = (buffer: ArrayBuffer): string => {
-    return Array.from(new Uint8Array(buffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-};
+// frontend/utils/crypto.ts
 
-// Helper: Convert a Hexadecimal string back to raw bytes (Uint8Array)
+const buf2hex = (buffer: ArrayBuffer): string =>
+    Array.from(new Uint8Array(buffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
 const hex2buf = (hexString: string): Uint8Array => {
+    if (!/^[0-9a-f]+$/i.test(hexString) || hexString.length % 2 !== 0) {
+        throw new Error("Invalid hex string");
+    }
+
     const match = hexString.match(/.{1,2}/g);
     if (!match) throw new Error("Invalid hex string");
-    return new Uint8Array(match.map(byte => parseInt(byte, 16)));
+
+    return new Uint8Array(match.map((byte) => parseInt(byte, 16)));
 };
 
-const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
-    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer =>
+    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+
+export type EncryptedPayload = {
+    iv: string;
+    ciphertext: string;
 };
 
-// 1. Generate a Key and Export it as a Hex string for the URL
+export type ShareFragment = {
+    keyString: string;
+    publicKeyFingerprint: string;
+};
+
+export function parseShareFragment(fragment: string): ShareFragment {
+    const cleaned = fragment.startsWith("#") ? fragment.substring(1) : fragment;
+    const [keyString, publicKeyFingerprint] = cleaned.split(".");
+
+    if (!keyString || !publicKeyFingerprint) {
+        throw new Error("Invalid secure link. Missing key or public-key fingerprint.");
+    }
+
+    if (!/^[0-9a-f]{64}$/i.test(keyString)) {
+        throw new Error("Invalid secure link. The decryption key is malformed.");
+    }
+
+    if (!/^[0-9a-f]{64}$/i.test(publicKeyFingerprint)) {
+        throw new Error("Invalid secure link. The public-key fingerprint is malformed.");
+    }
+
+    return { keyString, publicKeyFingerprint };
+}
+
+export function buildSignedPayload(iv: string, ciphertext: string): string {
+    // Stable canonical payload. The signature covers IV and ciphertext together.
+    return JSON.stringify({ version: 1, iv, ciphertext });
+}
+
+export async function sha256Hex(input: ArrayBuffer | string): Promise<string> {
+    const data = typeof input === "string" ? new TextEncoder().encode(input) : input;
+    const digest = await window.crypto.subtle.digest("SHA-256", data);
+    return buf2hex(digest);
+}
+
+export async function fingerprintPublicKey(publicKeyHex: string): Promise<string> {
+    return sha256Hex(toArrayBuffer(hex2buf(publicKeyHex)));
+}
+
 export async function generateKeyString(): Promise<string> {
     const key = await window.crypto.subtle.generateKey(
         { name: "AES-GCM", length: 256 },
@@ -28,116 +74,110 @@ export async function generateKeyString(): Promise<string> {
     return buf2hex(exported);
 }
 
-// 2. Encrypt the Wishlist Data
-export async function encryptData(text: string, keyString: string): Promise<{ iv: string, ciphertext: string }> {
+export async function encryptData(
+    text: string,
+    keyString: string
+): Promise<EncryptedPayload> {
     const keyBuffer = toArrayBuffer(hex2buf(keyString));
+
     const key = await window.crypto.subtle.importKey(
-        "raw", keyBuffer, "AES-GCM", false, ["encrypt"]
+        "raw",
+        keyBuffer,
+        "AES-GCM",
+        false,
+        ["encrypt"]
     );
 
     const encodedText = new TextEncoder().encode(text);
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
 
     const encryptedBuffer = await window.crypto.subtle.encrypt(
-        { name: "AES-GCM", iv: iv },
+        { name: "AES-GCM", iv },
         key,
         encodedText
     );
 
     return {
         iv: buf2hex(iv.buffer),
-        ciphertext: buf2hex(encryptedBuffer)
+        ciphertext: buf2hex(encryptedBuffer),
     };
 }
 
-// 3. Decrypt the Wishlist Data
 export async function decryptData(
-    encryptedObj: { iv: string; ciphertext: string },
+    encryptedObj: EncryptedPayload,
     keyString: string
 ): Promise<string> {
-    try {
-        // Convert the Hex strings back to raw bytes
-        const keyBuffer = toArrayBuffer(hex2buf(keyString));
-        const ivBuffer = toArrayBuffer(hex2buf(encryptedObj.iv));
-        const ciphertextBuffer = toArrayBuffer(hex2buf(encryptedObj.ciphertext));
+    const keyBuffer = toArrayBuffer(hex2buf(keyString));
+    const ivBuffer = toArrayBuffer(hex2buf(encryptedObj.iv));
+    const ciphertextBuffer = toArrayBuffer(hex2buf(encryptedObj.ciphertext));
 
-        // Import the key back into the Web Crypto API
-        const key = await window.crypto.subtle.importKey(
-            "raw", keyBuffer, "AES-GCM", false, ["decrypt"]
-        );
+    const key = await window.crypto.subtle.importKey(
+        "raw",
+        keyBuffer,
+        "AES-GCM",
+        false,
+        ["decrypt"]
+    );
 
-        // Perform the decryption
-        const decryptedBuffer = await window.crypto.subtle.decrypt(
-            { name: "AES-GCM", iv: ivBuffer },
-            key,
-            ciphertextBuffer
-        );
+    const decryptedBuffer = await window.crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: ivBuffer },
+        key,
+        ciphertextBuffer
+    );
 
-        // Convert the raw bytes back into readable text
-        return new TextDecoder().decode(decryptedBuffer);
-    } catch (error) {
-        console.error("Decryption failed:", error);
-        throw new Error("Decryption failed. The link might be invalid or the data was tampered with.");
-    }
+    return new TextDecoder().decode(decryptedBuffer);
 }
 
-// --- ASYMMETRIC CRYPTOGRAPHY (RSA Digital Signatures) ---
-
-// 4. Generate an RSA Key Pair for signing
-export async function generateSigningKeyPair() {
-    return await window.crypto.subtle.generateKey(
+export async function generateSigningKeyPair(): Promise<CryptoKeyPair> {
+    return window.crypto.subtle.generateKey(
         {
-            name: "RSASSA-PKCS1-v1_5",
-            modulusLength: 2048, // Standard secure length
+            name: "RSA-PSS",
+            modulusLength: 2048,
             publicExponent: new Uint8Array([1, 0, 1]),
             hash: "SHA-256",
         },
-        true, // Extractable
+        true,
         ["sign", "verify"]
-    );
+    ) as Promise<CryptoKeyPair>;
 }
 
-// 5. Sign the ciphertext using the Private Key
-export async function signData(ciphertextHex: string, privateKey: CryptoKey): Promise<string> {
-    const dataBuffer = new TextEncoder().encode(ciphertextHex);
+export async function signPayload(payload: string, privateKey: CryptoKey): Promise<string> {
+    const dataBuffer = new TextEncoder().encode(payload);
+
     const signatureBuffer = await window.crypto.subtle.sign(
-        "RSASSA-PKCS1-v1_5",
+        { name: "RSA-PSS", saltLength: 32 },
         privateKey,
         dataBuffer
     );
-    return buf2hex(signatureBuffer); // Export as Hex string
+
+    return buf2hex(signatureBuffer);
 }
 
-// 6. Verify the signature using the Public Key
 export async function verifySignature(
-    ciphertextHex: string,
+    payload: string,
     signatureHex: string,
     publicKeyHex: string
 ): Promise<boolean> {
-    // Convert the hex strings back to buffers
     const signatureBuffer = toArrayBuffer(hex2buf(signatureHex));
-    const dataBuffer = new TextEncoder().encode(ciphertextHex);
-    const publicKeySPKI = toArrayBuffer(hex2buf(publicKeyHex)); // SPKI is the standard format for exporting public keys
+    const dataBuffer = new TextEncoder().encode(payload);
+    const publicKeySPKI = toArrayBuffer(hex2buf(publicKeyHex));
 
-    // Import the public key back into the Crypto API
     const publicKey = await window.crypto.subtle.importKey(
         "spki",
         publicKeySPKI,
-        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+        { name: "RSA-PSS", hash: "SHA-256" },
         false,
         ["verify"]
     );
 
-    // Perform the mathematical verification
-    return await window.crypto.subtle.verify(
-        "RSASSA-PKCS1-v1_5",
+    return window.crypto.subtle.verify(
+        { name: "RSA-PSS", saltLength: 32 },
         publicKey,
         signatureBuffer,
         dataBuffer
     );
 }
 
-// Helper: Export the RSA Public Key so the server can store it
 export async function exportPublicKey(publicKey: CryptoKey): Promise<string> {
     const exported = await window.crypto.subtle.exportKey("spki", publicKey);
     return buf2hex(exported);
