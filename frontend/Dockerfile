@@ -6,6 +6,7 @@
 # This Dockerfile uses Node.js 24.13.0-slim, which was the latest LTS version at the time of writing.
 # To ensure security and compatibility, regularly update the NODE_VERSION ARG to the latest LTS version.
 ARG NODE_VERSION=24.13.0-slim
+ARG NEXT_PUBLIC_API_BASE_URL
 
 FROM node:${NODE_VERSION} AS dependencies
 
@@ -44,7 +45,12 @@ COPY --from=dependencies /app/node_modules ./node_modules
 # Copy application source code
 COPY . .
 
+# Allow injecting the public API base URL at build time so Next.js can
+# bake it into the client bundle (NEXT_PUBLIC_* variables are inlined
+# at build time). Provide this as a build-arg when building the image:
+# `docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://... .`
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
