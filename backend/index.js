@@ -11,6 +11,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
+// When running behind a reverse proxy (Dockploy / platform), Express needs
+// to trust the proxy so that `req.ip` and X-Forwarded-* headers are handled
+// correctly. This is required by express-rate-limit when the X-Forwarded-For
+// header is present.
+app.set("trust proxy", true);
+
 /**
  * CipherNote backend is intentionally an "untrusted storage server".
  * It never receives plaintext note content or the AES-GCM decryption key.
@@ -20,7 +26,14 @@ app.use(helmet());
 
 app.use(
     cors({
-        origin: FRONTEND_ORIGIN,
+        // Allow the configured frontend origin (from env) and localhost for dev.
+        origin: function (origin, callback) {
+            const allowed = [FRONTEND_ORIGIN, "http://localhost:3000"];
+            // `origin` will be undefined for same-origin requests (or non-browser tools).
+            if (!origin) return callback(null, true);
+            if (allowed.indexOf(origin) !== -1) return callback(null, true);
+            return callback(new Error("CORS policy: Origin not allowed"), false);
+        },
         methods: ["GET", "POST"],
         allowedHeaders: ["Content-Type", "x-vault-pin"],
     })
@@ -49,7 +62,8 @@ const pinLimiter = rateLimit({
     max: 10,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => ipKeyGenerator(req.ip),
+    // ipKeyGenerator expects the request object so pass `req` directly.
+    keyGenerator: (req) => ipKeyGenerator(req),
     message: { error: "Too many PIN attempts for this note. Please wait and try again." },
 });
 
