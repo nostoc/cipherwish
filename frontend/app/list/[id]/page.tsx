@@ -11,7 +11,7 @@ import {
     verifySignature,
 } from "../../../utils/crypto";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
 
 export default function ViewList() {
     const params = useParams();
@@ -35,7 +35,7 @@ export default function ViewList() {
                 const headers: HeadersInit = {};
                 if (providedPin) headers["x-vault-pin"] = providedPin;
 
-                const response = await fetch(`${API_BASE_URL}/api/wishlists/${id}`, { headers });
+                const response = await fetch(`${API_URL}/api/wishlists/${id}`, { headers });
                 const data = await response.json();
 
                 if (response.status === 401 && data.requiresPin) {
