@@ -89,39 +89,41 @@ export default function Home() {
     };
 
     return (
-        <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
+        <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
             <div className="mx-auto max-w-4xl">
-                <header className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
-                    <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-700">CipherNote</p>
-                    <h1 className="mt-3 text-4xl font-extrabold">Zero-knowledge note sharing</h1>
-                    <p className="mt-3 text-slate-600">
+                <header className="mb-6 rounded-3xl bg-white p-5 shadow-sm sm:mb-8 sm:p-6">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700 sm:text-sm">CipherNote</p>
+                    <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
+                        Zero-knowledge note sharing
+                    </h1>
+                    <p className="mt-3 text-sm text-slate-600 sm:text-base">
                         The note is encrypted in your browser. The backend stores only ciphertext, IV,
                         signature, and public-key metadata.
                     </p>
                 </header>
 
-                <section className="rounded-3xl bg-white p-6 shadow-sm">
+                <section className="rounded-3xl bg-white p-5 shadow-sm sm:p-6">
                     <label className="block text-sm font-semibold">Note content</label>
                     <textarea
-                        className="mt-2 min-h-56 w-full rounded-2xl border border-slate-200 p-4 outline-none focus:border-blue-600"
+                        className="mt-2 min-h-44 w-full rounded-2xl border border-slate-200 p-4 text-sm outline-none focus:border-blue-600 sm:min-h-56 sm:text-base"
                         placeholder={"Project launch ideas\nDinner reminder\nGift list"}
                         value={wishlist}
                         onChange={(e) => setWishlist(e.target.value)}
                     />
 
-                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <div className="mt-5 grid gap-4 lg:grid-cols-2">
                         <div>
                             <label className="block text-sm font-semibold">Vault PIN/passphrase</label>
                             <input
                                 type="password"
-                                className="mt-2 w-full rounded-2xl border border-slate-200 p-3 outline-none focus:border-blue-600"
+                                className="mt-2 w-full rounded-2xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-600 sm:text-base"
                                 placeholder="Optional, minimum 6 characters"
                                 value={pin}
                                 onChange={(e) => setPin(e.target.value)}
                             />
                         </div>
 
-                        <label className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                        <label className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                             <input
                                 type="checkbox"
                                 checked={isEphemeral}
@@ -143,27 +145,27 @@ export default function Home() {
                     <button
                         onClick={handleCreateLink}
                         disabled={loading}
-                        className="mt-6 w-full rounded-2xl bg-blue-700 px-5 py-4 font-bold text-white disabled:opacity-60"
+                        className="mt-6 w-full rounded-2xl bg-blue-700 px-5 py-4 text-sm font-bold text-white disabled:opacity-60 sm:text-base"
                     >
                         {loading ? "Encrypting, signing, and generating link..." : "Generate secure share link"}
                     </button>
                 </section>
 
                 {shareLink && (
-                    <section className="mt-6 rounded-3xl bg-emerald-50 p-6">
-                        <h2 className="text-2xl font-bold">Secure link ready</h2>
-                        <p className="mt-2 text-sm text-slate-600">
+                    <section className="mt-6 rounded-3xl bg-emerald-50 p-5 sm:p-6">
+                        <h2 className="text-xl font-bold sm:text-2xl">Secure link ready</h2>
+                        <p className="mt-2 text-sm text-slate-600 sm:text-base">
                             Anyone with the full link can decrypt the note. Share it only through a trusted channel.
                         </p>
                         <input
                             readOnly
                             value={shareLink}
                             onClick={(e) => e.currentTarget.select()}
-                            className="mt-4 w-full rounded-2xl border border-emerald-200 p-3 font-mono text-xs"
+                            className="mt-4 w-full rounded-2xl border border-emerald-200 p-3 font-mono text-xs sm:text-sm"
                         />
                         <button
                             onClick={copyLink}
-                            className="mt-3 rounded-2xl bg-emerald-700 px-5 py-3 font-semibold text-white"
+                            className="mt-3 w-full rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white sm:w-auto sm:text-base"
                         >
                             Copy link
                         </button>

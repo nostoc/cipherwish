@@ -97,61 +97,63 @@ export default function ViewList() {
     };
 
     return (
-        <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
+        <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
             <div className="mx-auto max-w-4xl">
-                <header className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
-                    <Link href="/" className="text-sm font-bold uppercase tracking-[0.18em] text-blue-700">
+                <header className="mb-6 rounded-3xl bg-white p-5 shadow-sm sm:mb-8 sm:p-6">
+                    <Link href="/" className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700 sm:text-sm">
                         CipherNote
                     </Link>
-                    <h1 className="mt-3 text-4xl font-extrabold">Verify first, then decrypt</h1>
-                    <p className="mt-3 text-slate-600">
+                    <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl lg:text-5xl">Verify first, then decrypt</h1>
+                    <p className="mt-3 text-sm text-slate-600 sm:text-base">
                         The browser verifies the public-key fingerprint and RSA-PSS signature before AES-GCM decryption.
                     </p>
                 </header>
 
                 {loading && (
-                    <section className="rounded-3xl bg-white p-6 shadow-sm">Opening secure note...</section>
+                    <section className="rounded-3xl bg-white p-5 shadow-sm sm:p-6">Opening secure note...</section>
                 )}
 
                 {requiresPin && !loading && !wishlist && (
-                    <form onSubmit={submitPin} className="rounded-3xl bg-white p-6 shadow-sm">
-                        <h2 className="text-2xl font-bold">Vault locked</h2>
-                        <p className="mt-2 text-sm text-slate-600">Enter the PIN/passphrase shared by the sender.</p>
+                    <form onSubmit={submitPin} className="rounded-3xl bg-white p-5 shadow-sm sm:p-6">
+                        <h2 className="text-xl font-bold sm:text-2xl">Vault locked</h2>
+                        <p className="mt-2 text-sm text-slate-600 sm:text-base">
+                            Enter the PIN/passphrase shared by the sender.
+                        </p>
                         <input
                             type="password"
-                            className="mt-5 w-full rounded-2xl border border-slate-200 p-3 outline-none focus:border-blue-600"
+                            className="mt-5 w-full rounded-2xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-600 sm:text-base"
                             value={pinInput}
                             onChange={(e) => setPinInput(e.target.value)}
                             autoFocus
                         />
                         {error && <p className="mt-3 text-sm text-rose-700">{error}</p>}
-                        <button className="mt-5 rounded-2xl bg-blue-700 px-5 py-3 font-bold text-white">
+                        <button className="mt-5 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-bold text-white sm:w-auto sm:text-base">
                             Unlock and decrypt
                         </button>
                     </form>
                 )}
 
                 {error && !requiresPin && !loading && (
-                    <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-800">
-                        <h2 className="text-2xl font-bold">Access blocked</h2>
+                    <section className="rounded-3xl border border-rose-200 bg-rose-50 p-5 text-rose-800 shadow-sm sm:p-6">
+                        <h2 className="text-xl font-bold sm:text-2xl">Access blocked</h2>
                         <p className="mt-3">{error}</p>
                     </section>
                 )}
 
                 {wishlist && (
-                    <section className="rounded-3xl bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between gap-4">
-                            <h2 className="text-2xl font-bold">Decrypted note</h2>
+                    <section className="rounded-3xl bg-white p-5 shadow-sm sm:p-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <h2 className="text-xl font-bold sm:text-2xl">Decrypted note</h2>
                             {verified && (
-                                <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">
+                                <span className="w-fit rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 sm:text-sm">
                                     Fingerprint + signature verified
                                 </span>
                             )}
                         </div>
-                        <pre className="mt-5 whitespace-pre-wrap rounded-2xl bg-slate-50 p-5 text-slate-800">
+                        <pre className="mt-5 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-sm text-slate-800 sm:p-5 sm:text-base">
                             {wishlist}
                         </pre>
-                        <p className="mt-4 text-sm text-slate-600">
+                        <p className="mt-4 text-sm text-slate-600 sm:text-base">
                             Integrity checks and decryption were performed locally in this browser.
                         </p>
                     </section>
