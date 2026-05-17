@@ -11,7 +11,7 @@ import {
     signPayload,
 } from "../utils/crypto";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
 
 export default function Home() {
     const [wishlist, setWishlist] = useState("");
@@ -46,7 +46,7 @@ export default function Home() {
             const signedPayload = buildSignedPayload(iv, ciphertext);
             const signature = await signPayload(signedPayload, rsaKeyPair.privateKey);
 
-            const response = await fetch(`${API_BASE_URL}/api/wishlists`, {
+            const response = await fetch(`${API_URL}/api/wishlists`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
