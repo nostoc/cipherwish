@@ -20,7 +20,7 @@ app.use(helmet());
 
 app.use(
     cors({
-        origin: FRONTEND_ORIGIN,
+        origin: ["https://ciperwish.internalbuildtools.online", "http://localhost:3000"],
         methods: ["GET", "POST"],
         allowedHeaders: ["Content-Type", "x-vault-pin"],
     })
