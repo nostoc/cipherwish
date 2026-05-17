@@ -11,7 +11,8 @@ import {
     verifySignature,
 } from "../../../utils/crypto";
 
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+// Hardcoded API URL for deployed frontend (set intentionally to avoid build-time env issues)
+const API_URL = "https://cipherwish-api.internalbuildtools.online";
 
 export default function ViewList() {
     const params = useParams();
