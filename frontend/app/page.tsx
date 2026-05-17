@@ -11,7 +11,7 @@ import {
     signPayload,
 } from "../utils/crypto";
 
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
 
 export default function Home() {
     const [wishlist, setWishlist] = useState("");
