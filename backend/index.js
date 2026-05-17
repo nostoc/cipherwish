@@ -12,8 +12,8 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
 /**
- * CipherWish backend is intentionally an "untrusted storage server".
- * It never receives plaintext wishlist content or the AES-GCM decryption key.
+ * CipherNote backend is intentionally an "untrusted storage server".
+ * It never receives plaintext note content or the AES-GCM decryption key.
  */
 
 app.use(helmet());
@@ -33,7 +33,7 @@ const createLimiter = rateLimit({
     max: 20,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: "Too many wishlist creation attempts. Please try again later." },
+    message: { error: "Too many note creation attempts. Please try again later." },
 });
 
 const readLimiter = rateLimit({
@@ -50,7 +50,7 @@ const pinLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => ipKeyGenerator(req.ip),
-    message: { error: "Too many PIN attempts for this wishlist. Please wait and try again." },
+    message: { error: "Too many PIN attempts for this note. Please wait and try again." },
 });
 
 const HEX_RE = /^[0-9a-f]+$/i;
@@ -134,7 +134,7 @@ async function createUniqueShareId() {
 }
 
 app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "ok", service: "cipherwish-untrusted-storage" });
+    res.status(200).json({ status: "ok", service: "ciphernote-untrusted-storage" });
 });
 
 app.post("/api/wishlists", createLimiter, async (req, res) => {
@@ -167,23 +167,23 @@ app.post("/api/wishlists", createLimiter, async (req, res) => {
 
         res.status(201).json({ id: wishlist.shareId });
     } catch (error) {
-        console.error("Create wishlist failed:", error);
+        console.error("Create note failed:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
-app.get("/api/wishlists/:shareId", readLimiter, async (req, res) => {
+app.get("/api/wishlists/:shareId", readLimiter, pinLimiter, async (req, res) => {
     try {
         const { shareId } = req.params;
 
         if (!SHARE_ID_RE.test(shareId)) {
-            return res.status(404).json({ error: "Wishlist not found." });
+            return res.status(404).json({ error: "Note not found." });
         }
 
         const list = await Wishlist.findOne({ shareId });
 
         if (!list) {
-            return res.status(404).json({ error: "Wishlist not found, expired, or already consumed." });
+            return res.status(404).json({ error: "Note not found, expired, or already consumed." });
         }
 
         if (list.pinHash) {
@@ -213,7 +213,7 @@ app.get("/api/wishlists/:shareId", readLimiter, async (req, res) => {
         if (list.isEphemeral) {
             result = await Wishlist.findOneAndDelete({ shareId });
             if (!result) {
-                return res.status(404).json({ error: "Wishlist was already consumed." });
+                return res.status(404).json({ error: "Note was already consumed." });
             }
         }
 
@@ -225,7 +225,7 @@ app.get("/api/wishlists/:shareId", readLimiter, async (req, res) => {
             signature: result.signature,
         });
     } catch (error) {
-        console.error("Read wishlist failed:", error);
+        console.error("Read note failed:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
@@ -234,7 +234,7 @@ mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
         console.log("✅ Connected to MongoDB. Untrusted storage server ready.");
-        app.listen(PORT, () => console.log(`🚀 CipherWish backend running on port ${PORT}`));
+        app.listen(PORT, () => console.log(`🚀 CipherNote backend running on port ${PORT}`));
     })
     .catch((err) => {
         console.error("❌ MongoDB connection error:", err);

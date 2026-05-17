@@ -45,7 +45,7 @@ export default function ViewList() {
                 }
 
                 if (!response.ok) {
-                    throw new Error(data.error || "Failed to fetch wishlist.");
+                    throw new Error(data.error || "Failed to fetch note.");
                 }
 
                 const calculatedFingerprint = await fingerprintPublicKey(data.publicKey);
@@ -100,7 +100,7 @@ export default function ViewList() {
             <div className="mx-auto max-w-4xl">
                 <header className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
                     <Link href="/" className="text-sm font-bold uppercase tracking-[0.18em] text-blue-700">
-                        CipherWish
+                        CipherNote
                     </Link>
                     <h1 className="mt-3 text-4xl font-extrabold">Verify first, then decrypt</h1>
                     <p className="mt-3 text-slate-600">
@@ -109,7 +109,7 @@ export default function ViewList() {
                 </header>
 
                 {loading && (
-                    <section className="rounded-3xl bg-white p-6 shadow-sm">Opening secure wishlist...</section>
+                    <section className="rounded-3xl bg-white p-6 shadow-sm">Opening secure note...</section>
                 )}
 
                 {requiresPin && !loading && !wishlist && (
@@ -140,7 +140,7 @@ export default function ViewList() {
                 {wishlist && (
                     <section className="rounded-3xl bg-white p-6 shadow-sm">
                         <div className="flex items-center justify-between gap-4">
-                            <h2 className="text-2xl font-bold">Decrypted wishlist</h2>
+                            <h2 className="text-2xl font-bold">Decrypted note</h2>
                             {verified && (
                                 <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">
                                     Fingerprint + signature verified

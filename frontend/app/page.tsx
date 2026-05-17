@@ -23,7 +23,7 @@ export default function Home() {
 
     const handleCreateLink = async () => {
         if (!wishlist.trim()) {
-            setFormError("Add at least one wishlist item before generating a secure link.");
+            setFormError("Add note content before generating a secure link.");
             return;
         }
 
@@ -91,19 +91,19 @@ export default function Home() {
         <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
             <div className="mx-auto max-w-4xl">
                 <header className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
-                    <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-700">CipherWish</p>
-                    <h1 className="mt-3 text-4xl font-extrabold">Zero-knowledge wishlist sharing</h1>
+                    <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-700">CipherNote</p>
+                    <h1 className="mt-3 text-4xl font-extrabold">Zero-knowledge note sharing</h1>
                     <p className="mt-3 text-slate-600">
-                        The wishlist is encrypted in your browser. The backend stores only ciphertext, IV,
+                        The note is encrypted in your browser. The backend stores only ciphertext, IV,
                         signature, and public-key metadata.
                     </p>
                 </header>
 
                 <section className="rounded-3xl bg-white p-6 shadow-sm">
-                    <label className="block text-sm font-semibold">Wishlist content</label>
+                    <label className="block text-sm font-semibold">Note content</label>
                     <textarea
                         className="mt-2 min-h-56 w-full rounded-2xl border border-slate-200 p-4 outline-none focus:border-blue-600"
-                        placeholder={"Leather notebook\nSoundcore headphones\nBlack cat plushie"}
+                        placeholder={"Project launch ideas\nDinner reminder\nGift list"}
                         value={wishlist}
                         onChange={(e) => setWishlist(e.target.value)}
                     />
@@ -152,7 +152,7 @@ export default function Home() {
                     <section className="mt-6 rounded-3xl bg-emerald-50 p-6">
                         <h2 className="text-2xl font-bold">Secure link ready</h2>
                         <p className="mt-2 text-sm text-slate-600">
-                            Anyone with the full link can decrypt the list. Share it only through a trusted channel.
+                            Anyone with the full link can decrypt the note. Share it only through a trusted channel.
                         </p>
                         <input
                             readOnly

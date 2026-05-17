@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CipherWish | Secure Zero-Knowledge Wishlist Sharing",
+  title: "CipherNote | Secure Zero-Knowledge Note Sharing",
   description:
-    "Create encrypted wishlists, protect them with an optional PIN, and share them through zero-knowledge links.",
+    "Create encrypted notes, protect them with an optional PIN, and share them through zero-knowledge links.",
 };
 
 export default function RootLayout({
@@ -19,11 +19,11 @@ export default function RootLayout({
           {children}
           <footer className="mt-auto border-t border-slate-800/80 bg-slate-950 text-slate-100">
             <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-10">
-              <p className="text-sm font-semibold text-slate-100">© 2026 CipherWish. All rights reserved.</p>
+              <p className="text-sm font-semibold text-slate-100">© 2026 CipherNote. All rights reserved.</p>
 
               <nav aria-label="Footer" className="flex flex-wrap items-center gap-3 text-sm font-medium text-slate-300">
                 <a
-                  href="https://github.com/nostoc/cipherwish.git"
+                  href="https://github.com/nostoc/ciphernote.git"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-full px-2 py-1.5 hover:text-white"
@@ -39,7 +39,7 @@ export default function RootLayout({
                 <span aria-hidden="true" className="text-slate-600">|</span>
 
                 <a
-                  href="https://github.com/nostoc/cipherwish/blob/main/README.md"
+                  href="https://github.com/nostoc/ciphernote/blob/main/README.md"
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-full px-2 py-1.5 hover:text-white"
@@ -50,7 +50,7 @@ export default function RootLayout({
                 <span aria-hidden="true" className="text-slate-600">|</span>
 
                 <a
-                  href="https://github.com/nostoc/cipherwish/blob/main/LICENSE"
+                  href="https://github.com/nostoc/ciphernote/blob/main/LICENSE"
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-full px-2 py-1.5 hover:text-white"
@@ -61,7 +61,7 @@ export default function RootLayout({
                 <span aria-hidden="true" className="text-slate-600">|</span>
 
                 <a
-                  href="https://github.com/nostoc/cipherwish/wiki"
+                  href="https://github.com/nostoc/ciphernote/wiki"
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-full px-2 py-1.5 hover:text-white"
