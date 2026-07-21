@@ -23,7 +23,7 @@ export default function RootLayout({
 
               <nav aria-label="Footer" className="flex flex-wrap items-center gap-3 text-sm font-medium text-slate-300">
                 <a
-                  href="https://github.com/nostoc/ciphernote.git"
+                  href="https://github.com/nostoc/cipherwish.git"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-full px-2 py-1.5 hover:text-white"
@@ -39,7 +39,7 @@ export default function RootLayout({
                 <span aria-hidden="true" className="text-slate-600">|</span>
 
                 <a
-                  href="https://github.com/nostoc/ciphernote/blob/main/README.md"
+                  href="https://github.com/nostoc/cipherwish/blob/main/README.md"
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-full px-2 py-1.5 hover:text-white"
@@ -61,7 +61,7 @@ export default function RootLayout({
                 <span aria-hidden="true" className="text-slate-600">|</span>
 
                 <a
-                  href="https://github.com/nostoc/ciphernote/wiki"
+                  href="https://github.com/nostoc/cipherwish/wiki"
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-full px-2 py-1.5 hover:text-white"
